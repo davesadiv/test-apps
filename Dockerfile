@@ -1,3 +1,3 @@
 FROM alpine:latest
-COPY etc/wildfire-elf /etc/wildfire-elf
-COPY etc/secrets /etc/secrets
+COPY add-on/wildfire-elf /etc/wildfire-elf
+COPY add-on/secrets /etc/secrets
