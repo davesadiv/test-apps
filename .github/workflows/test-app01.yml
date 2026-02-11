@@ -3,34 +3,31 @@ name: App Deployment
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    # Added environment here so the build job can access GCP_KEY if needed
-    environment: Cortex 
+    environment: Cortex
     outputs:
-      # Note: Ensure you actually have a step with id 'meta' if you use this output
-      image_tag: "latest" 
+      image_tag: "latest"
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Build Docker Image
-        # build docker image
         run: |
+          # We use the workflows folder as the context because your etc/ and Dockerfile are there
           docker build -t us-central1-docker.pkg.dev/pcs-gcp-lab01/ew-acr/nginx:latest \
             -f .github/workflows/Dockerfile .github/workflows/
 
-  # Call the reusable security workflow
+  # Call the reusable security workflow from your central repository
   security-check:
     needs: build
-    # Ensure this repository and path are correct and public, or that the token has access
+    # Ensure 'reusable-cortex-scan.yml' exists in the .github/workflows/ folder of this repo
     uses: davesadiv/reusable-cortex-cli-scanner/.github/workflows/reusable-cortex-scan.yml@main
     with:
       image_name: "us-central1-docker.pkg.dev/pcs-gcp-lab01/ew-acr/nginx:latest"
       environment_name: "Cortex"
-    secrets:
-      GCP_KEY: ${{ secrets.GCP_KEY }}
-      CORTEX_API_KEY: ${{ secrets.CORTEX_API_KEY }}
-      CORTEX_API_KEY_ID: ${{ secrets.CORTEX_API_KEY_ID }}
+      scan_directory: "."
+    secrets: inherit # Automatically passes CORTEX_API_KEY, CORTEX_API_KEY_ID, and GCP_KEY
