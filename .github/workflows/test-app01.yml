@@ -15,19 +15,24 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Debug File Path
+        run: |
+          echo "Current directory: $(pwd)"
+          echo "Listing .github/workflows content:"
+          ls -R .github/workflows/
+
       - name: Build Docker Image
         run: |
-          # We use the workflows folder as the context because your etc/ and Dockerfile are there
+          # -f points to the Dockerfile inside the subfolder
+          # The final path sets the context to that same subfolder so COPY etc/ works
           docker build -t us-central1-docker.pkg.dev/pcs-gcp-lab01/ew-acr/nginx:latest \
             -f .github/workflows/Dockerfile .github/workflows/
 
-  # Call the reusable security workflow from your central repository-done
   security-check:
     needs: build
-    # Ensure 'reusable-cortex-scan.yml' exists in the .github/workflows/ folder of this repo
+    # Logic: {owner}/{repo}/{path}/{filename}@{ref}
     uses: davesadiv/reusable-cortex-cli-scanner/.github/workflows/reusable-cortex-scan.yml@main
     with:
       image_name: "us-central1-docker.pkg.dev/pcs-gcp-lab01/ew-acr/nginx:latest"
       environment_name: "Cortex"
-      scan_directory: "."
-    secrets: inherit # Automatically passes CORTEX_API_KEY, CORTEX_API_KEY_ID, and GCP_KEY
+    secrets: inherit
