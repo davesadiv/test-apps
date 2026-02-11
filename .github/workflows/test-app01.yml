@@ -22,7 +22,7 @@ jobs:
 
   security-check:
     needs: build
-    # Logic: {owner}/{repo}/{path}/{filename}@{ref}
+    # Logic: {owner}/{repo}/{path}/{filename}@{ref}-
     uses: davesadiv/reusable-cortex-cli-scanner/.github/workflows/reusable-cortex-scan.yml@main
     with:
       image_name: "us-central1-docker.pkg.dev/pcs-gcp-lab01/ew-acr/nginx:latest"
