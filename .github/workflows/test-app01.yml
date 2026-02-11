@@ -15,18 +15,10 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Debug File Path
-        run: |
-          echo "Current directory: $(pwd)"
-          echo "Listing .github/workflows content:"
-          ls -R .github/workflows/
-
       - name: Build Docker Image
         run: |
-          # -f points to the Dockerfile inside the subfolder
-          # The final path sets the context to that same subfolder so COPY etc/ works
-          docker build -t us-central1-docker.pkg.dev/pcs-gcp-lab01/ew-acr/nginx:latest \
-            -f .github/workflows/Dockerfile .github/workflows/
+          # Since Dockerfile is in the root, we just use '.' as the context
+          docker build -t us-central1-docker.pkg.dev/pcs-gcp-lab01/ew-acr/nginx:latest .
 
   security-check:
     needs: build
