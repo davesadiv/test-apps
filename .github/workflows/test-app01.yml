@@ -21,7 +21,7 @@ jobs:
           docker build -t us-central1-docker.pkg.dev/pcs-gcp-lab01/ew-acr/nginx:latest \
             -f .github/workflows/Dockerfile .github/workflows/
 
-  # Call the reusable security workflow from your central repository
+  # Call the reusable security workflow from your central repository-done
   security-check:
     needs: build
     # Ensure 'reusable-cortex-scan.yml' exists in the .github/workflows/ folder of this repo
