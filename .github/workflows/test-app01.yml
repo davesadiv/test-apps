@@ -17,12 +17,12 @@ jobs:
 
       - name: Build Docker Image
         run: |
-          # Since Dockerfile is in the root, we just use '.' as the context
+          # Standard build since Dockerfile and etc/ are now in the root
           docker build -t us-central1-docker.pkg.dev/pcs-gcp-lab01/ew-acr/nginx:latest .
 
   security-check:
     needs: build
-    # Logic: {owner}/{repo}/{path}/{filename}@{ref}-
+    # Note: Ensure the path below is exactly where your reusable workflow lives
     uses: davesadiv/reusable-cortex-cli-scanner/.github/workflows/reusable-cortex-scan.yml@main
     with:
       image_name: "us-central1-docker.pkg.dev/pcs-gcp-lab01/ew-acr/nginx:latest"
