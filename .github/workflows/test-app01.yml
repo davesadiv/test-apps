@@ -17,7 +17,7 @@ jobs:
     needs: build
     uses: davesadiv/reusable-cortex-cli-scanner/.github/workflows/reusable-cortex-scan.yml@main
     with:
-      image_name: "us-central1-docker.pkg.dev/my-project/my-repo/my-image:latest"
+      image_name: "us-central1-docker.pkg.dev/pcs-gcp-lab01/ew-acr/nginx"
       environment_name: "Cortex"
     secrets:
       GCP_KEY: ${{ secrets.GCP_KEY }}
