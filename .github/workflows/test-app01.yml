@@ -1,0 +1,25 @@
+name: App Deployment
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tags }}
+    steps:
+      - name: Build and Push... (your existing build logic)
+
+  # Call the reusable security workflow
+  security-check:
+    needs: build
+    uses: davesadiv/reusable-cortex-cli-scanner/.github/workflows/reusable-cortex-scan.yml@main
+    with:
+      image_name: "us-central1-docker.pkg.dev/my-project/my-repo/my-image:latest"
+      environment_name: "Cortex"
+    secrets:
+      GCP_KEY: ${{ secrets.GCP_KEY }}
+      CORTEX_API_KEY: ${{ secrets.CORTEX_API_KEY }}
+      CORTEX_API_KEY_ID: ${{ secrets.CORTEX_API_KEY_ID }}
