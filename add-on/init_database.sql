@@ -1,32 +1,36 @@
--- Database Initialization Script
--- Generated: 2026-02-12
+/* SECURITY SCAN TEST FILE 
+   PURPOSE: Testing Cortex CLI / Static Analysis detection
+   WARNING: Do not run this on a production database.
+*/
 
--- 1. Create Tables
-CREATE TABLE IF NOT EXISTS users (
-    user_id SERIAL PRIMARY KEY,
-    username VARCHAR(50) UNIQUE NOT NULL,
-    email VARCHAR(100) UNIQUE NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+-- 1. Risky Stored Procedure (Dynamic SQL Injection Pattern)
+-- Scanners should flag the use of EXECUTE with string concatenation.
+CREATE OR REPLACE PROCEDURE find_user_danger(p_input TEXT)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    -- This is a classic injection pattern that scanners look for
+    EXECUTE 'SELECT * FROM users WHERE username = ''' || p_input || '''';
+END;
+$$;
 
-CREATE TABLE IF NOT EXISTS projects (
-    project_id SERIAL PRIMARY KEY,
-    title VARCHAR(100) NOT NULL,
-    description TEXT,
-    owner_id INT REFERENCES users(user_id) ON DELETE CASCADE,
-    status VARCHAR(20) DEFAULT 'active'
-);
+-- 2. Dangerous SQL Server System Procedure
+-- Patterns like xp_cmdshell are highly suspicious and usually flagged immediately.
+EXEC sp_configure 'show advanced options', 1;
+RECONFIGURE;
+EXEC sp_configure 'xp_cmdshell', 1;
+RECONFIGURE;
 
--- 2. Insert Sample Data
-INSERT INTO users (username, email) VALUES 
-('dev_guru', 'guru@example.com'),
-('data_wiz', 'wiz@example.com');
+-- 3. Hardcoded Credentials Pattern
+-- Scanners check for keywords like 'PASSWORD' or 'SECRET' followed by strings.
+CREATE USER audit_svc WITH PASSWORD 'TemporaryPassword123!';
 
-INSERT INTO projects (title, description, owner_id) VALUES 
-('Project Alpha', 'A high-priority internal tool.', 1),
-('Beta Launch', 'Public-facing API documentation.', 2);
+-- 4. Over-privileged Permissions
+-- Granting ALL or Superuser rights to a generic user is a configuration risk.
+GRANT ALL PRIVILEGES ON DATABASE security_test TO audit_svc;
+ALTER USER audit_svc WITH SUPERUSER;
 
--- 3. Simple Verification Query
-SELECT u.username, p.title, p.status 
-FROM users u 
-JOIN projects p ON u.user_id = p.owner_id;
+-- 5. Data Exfiltration/Information Disclosure Pattern
+-- Querying system tables or information_schema in unusual ways.
+SELECT name, password_hash FROM sys.sql_logins;
+SELECT * FROM information_schema.tables;
