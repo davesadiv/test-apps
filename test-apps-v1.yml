@@ -1,0 +1,36 @@
+name: App Deployment
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment: Cortex
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker Image
+        run: |
+          # Build locally
+          docker build -t us-central1-docker.pkg.dev/pcs-gcp-lab01/ew-acr/nginx:latest .
+          # Save to a file to move between jobs
+          docker save us-central1-docker.pkg.dev/pcs-gcp-lab01/ew-acr/nginx:latest > nginx-image.tar
+
+      - name: Upload Image for Scanner
+        uses: actions/upload-artifact@v4
+        with:
+          name: nginx-image
+          path: nginx-image.tar
+          retention-days: 1
+
+  security-check:
+    needs: build
+    uses: davesadiv/reusable-cortex-cli-scanner/.github/workflows/reusable-cortex-scan.yml@main
+    with:
+      image_name: "us-central1-docker.pkg.dev/pcs-gcp-lab01/ew-acr/nginx:latest"
+      environment_name: "Cortex"
+    secrets: inherit
