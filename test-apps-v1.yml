@@ -16,21 +16,20 @@ jobs:
       - name: Build Docker Image
         run: |
           # Build locally
-          docker build -t us-central1-docker.pkg.dev/pcs-gcp-lab01/ew-acr/alpine:latest .
+          docker build -t us-central1-docker.pkg.dev/pcs-gcp-lab01/ew-acr/nginx:latest .
           # Save to a file to move between jobs
-          docker save us-central1-docker.pkg.dev/pcs-gcp-lab01/ew-acr/alpine:latest > alpine-image.tar
-
+          docker save us-central1-docker.pkg.dev/pcs-gcp-lab01/ew-acr/nginx:latest > nginx-image.tar
       - name: Upload Image for Scanner
         uses: actions/upload-artifact@v4
         with:
-          name: alpine-image
-          path: alpine-image.tar
+          name: nginx-image
+          path: nginx-image.tar
           retention-days: 1
 
   security-check:
     needs: build
     uses: davesadiv/reusable-cortex-cli-scanner/.github/workflows/reusable-cortex-scan.yml@main
     with:
-      image_name: "us-central1-docker.pkg.dev/pcs-gcp-lab01/ew-acr/alpine:latest"
+      image_name: "us-central1-docker.pkg.dev/pcs-gcp-lab01/ew-acr/nginx:latest"
       environment_name: "Cortex"
     secrets: inherit
