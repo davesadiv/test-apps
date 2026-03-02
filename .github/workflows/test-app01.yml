@@ -31,7 +31,7 @@ jobs:
 
   security-check:
     needs: build
-    # Reusable workflows define their own runs-on internally
+    # Reusable workflows handle their own runner configuration internally
     uses: davesadiv/reusable-cortex-cli-scanner/.github/workflows/reusable-cortex-scan.yml@main
     with:
       # Pass the explicit output from the build job
