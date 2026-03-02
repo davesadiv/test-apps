@@ -3,21 +3,22 @@ name: App Deployment
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     environment: Cortex
+    # Share the variable with the next job using outputs
+    outputs:
+      image_name: ${{ vars.IMAGE_FULL_NAME }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Build Docker Image
         run: |
-          # Ensure IMAGE_FULL_NAME is set in Settings > Environments > Cortex
+          # Use the variable from the 'Cortex' environment
           docker build -t ${{ vars.IMAGE_FULL_NAME }} .
           docker save ${{ vars.IMAGE_FULL_NAME }} > nginx-image.tar
 
@@ -30,8 +31,11 @@ jobs:
 
   security-check:
     needs: build
+    # Explicitly link this job to the 'Cortex' environment to access its variables
+    environment: Cortex 
     uses: davesadiv/reusable-cortex-cli-scanner/.github/workflows/reusable-cortex-scan.yml@main
     with:
-      image_name: ${{ vars.IMAGE_FULL_NAME }}
+      # Use the output from the build job to be 100% sure it isn't blank
+      image_name: ${{ needs.build.outputs.image_name }}
       environment_name: "Cortex"
     secrets: inherit
