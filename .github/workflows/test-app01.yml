@@ -9,7 +9,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     environment: Cortex
-    # Map the environment variable to an output for the next job
+    # Explicitly map the Environment Variable to a Job Output
     outputs:
       image_name: ${{ vars.IMAGE_FULL_NAME }}
     steps:
@@ -18,7 +18,7 @@ jobs:
 
       - name: Build Docker Image
         run: |
-          # Use the IMAGE_FULL_NAME variable from GitHub Environment
+          # Use the variable from the 'Cortex' environment
           docker build -t ${{ vars.IMAGE_FULL_NAME }} .
           docker save ${{ vars.IMAGE_FULL_NAME }} > nginx-image.tar
 
@@ -31,10 +31,10 @@ jobs:
 
   security-check:
     needs: build
-    # Reusable workflows handle their own runner configuration internally
+    # Reusable workflows define their own runner internally
     uses: davesadiv/reusable-cortex-cli-scanner/.github/workflows/reusable-cortex-scan.yml@main
     with:
-      # Pass the explicit output from the build job
+      # Pass the output from the build job to ensure it is not blank
       image_name: ${{ needs.build.outputs.image_name }}
       environment_name: "Cortex"
     secrets: inherit
