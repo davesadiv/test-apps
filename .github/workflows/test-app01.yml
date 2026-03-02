@@ -17,7 +17,7 @@ jobs:
 
       - name: Build Docker Image
         run: |
-          # Uses the IMAGE_FULL_NAME variable from GitHub Environment Variables
+          # Ensure IMAGE_FULL_NAME is set in Settings > Environments > Cortex
           docker build -t ${{ vars.IMAGE_FULL_NAME }} .
           docker save ${{ vars.IMAGE_FULL_NAME }} > nginx-image.tar
 
@@ -30,7 +30,6 @@ jobs:
 
   security-check:
     needs: build
-    # Calls the reusable scanner
     uses: davesadiv/reusable-cortex-cli-scanner/.github/workflows/reusable-cortex-scan.yml@main
     with:
       image_name: ${{ vars.IMAGE_FULL_NAME }}
