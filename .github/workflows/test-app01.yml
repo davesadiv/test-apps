@@ -15,6 +15,7 @@ jobs:
 
       - name: Build Docker Image
         run: |
+          # Hardcoded for reliability to prevent empty variable errors
           docker build -t us-central1-docker.pkg.dev/pcs-gcp-lab01/ew-acr/nginx:latest .
           docker save us-central1-docker.pkg.dev/pcs-gcp-lab01/ew-acr/nginx:latest > nginx-image.tar
 
@@ -29,6 +30,7 @@ jobs:
     needs: build
     uses: davesadiv/reusable-cortex-cli-scanner/.github/workflows/reusable-cortex-scan.yml@main
     with:
+      # Explicitly passing the image string to the reusable workflow
       image_name: "us-central1-docker.pkg.dev/pcs-gcp-lab01/ew-acr/nginx:latest"
       environment_name: "Cortex"
     secrets: inherit
