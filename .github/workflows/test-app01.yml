@@ -1,91 +1,36 @@
-name: Reusable Cortex Security Scan
+name: App Deployment
 
 on:
-  workflow_call:
-    inputs:
-      image_name:
-        required: true
-        type: string
-      scan_directory:
-        required: false
-        type: string
-        default: "."
-      environment_name:
-        required: true
-        type: string
+  push:
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
-  scan:
+  build:
     runs-on: ubuntu-latest
-    environment: ${{ inputs.environment_name }}
-    
-    env:
-      CORTEX_API_URL: https://api-pcscortexcloud.xdr.us.paloaltonetworks.com
-
+    environment: Cortex
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Download Built Image
-        uses: actions/download-artifact@v4
+      - name: Build Docker Image
+        run: |
+          # Hardcoded for reliability to prevent empty variable errors
+          docker build -t us-central1-docker.pkg.dev/pcs-gcp-lab01/ew-acr/nginx:latest .
+          docker save us-central1-docker.pkg.dev/pcs-gcp-lab01/ew-acr/nginx:latest > nginx-image.tar
+
+      - name: Upload Image Artifact
+        uses: actions/upload-artifact@v4
         with:
           name: nginx-image
+          path: nginx-image.tar
+          retention-days: 1
 
-      - name: Load Image into Docker
-        run: |
-          docker load < nginx-image.tar
-          docker images # Confirm image is present locally
-
-      - name: Install Dependencies
-        run: sudo apt-get update && sudo apt-get install -y jq libhyperscan5
-
-      - name: Download Cortex CLI
-        env:
-          CORTEX_API_KEY: ${{ secrets.CORTEX_API_KEY }}
-          CORTEX_API_KEY_ID: ${{ secrets.CORTEX_API_KEY_ID }}
-        run: |
-          # Fetch the authorized download link for the CLI
-          RESPONSE=$(curl -s -f \
-            -H "x-xdr-auth-id: ${CORTEX_API_KEY_ID}" \
-            -H "Authorization: ${CORTEX_API_KEY}" \
-            "${{ env.CORTEX_API_URL }}/public_api/v1/unified-cli/releases/download-link?os=linux&architecture=amd64")
-          
-          URL=$(echo "$RESPONSE" | jq -r '.signed_url // empty')
-          curl -s -L -o ./cortexcli "$URL"
-          chmod +x ./cortexcli
-
-      - name: IaC (Code) Scan
-        env:
-          CORTEX_API_KEY: ${{ secrets.CORTEX_API_KEY }}
-          CORTEX_API_KEY_ID: ${{ secrets.CORTEX_API_KEY_ID }}
-        run: |
-          # Use 'code scan' for IaC and misconfiguration analysis
-          # --api-base-url, --api-key-id, and --api-key are mandatory for cloud upload
-          ./cortexcli \
-            --api-key "${CORTEX_API_KEY}" \
-            --api-key-id "${CORTEX_API_KEY_ID}" \
-            --api-base-url "${{ env.CORTEX_API_URL }}" \
-            code scan \
-            --directory "${{ inputs.scan_directory }}" \
-            --repo-id "${{ github.repository }}" \
-            --branch "${{ github.ref_name }}" \
-            --create-repo-if-missing \
-            --timeout 300 || echo "IaC scan identified security risks."
-
-      - name: Image Scan and Upload
-        env:
-          CORTEX_API_KEY: ${{ secrets.CORTEX_API_KEY }}
-          CORTEX_API_KEY_ID: ${{ secrets.CORTEX_API_KEY_ID }}
-        run: |
-          # Perform container analysis and upload results
-          # --create-repo-if-missing ensures the results map to an entity in your catalog
-          ./cortexcli \
-            --api-key "${CORTEX_API_KEY}" \
-            --api-key-id "${CORTEX_API_KEY_ID}" \
-            --api-base-url "${{ env.CORTEX_API_URL }}" \
-            image scan "${{ inputs.image_name }}" \
-            --scanners "vulnerability,malware,secret" \
-            --repo-id "${{ github.repository }}" \
-            --branch "${{ github.ref_name }}" \
-            --create-repo-if-missing \
-            --timeout 300 || echo "Image scan identified security risks."
+  security-check:
+    needs: build
+    uses: davesadiv/reusable-cortex-cli-scanner/.github/workflows/reusable-cortex-scan.yml@main
+    with:
+      # Explicitly passing the image string to the reusable workflow
+      image_name: "us-central1-docker.pkg.dev/pcs-gcp-lab01/ew-acr/nginx:latest"
+      environment_name: "Cortex"
+    secrets: inherit
